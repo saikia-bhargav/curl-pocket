@@ -3,11 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Colors } from '@/theme';
 import type { RequestStackParamList } from '@/navigation/types';
 
-// Placeholder screens — will be replaced in Prompt 3
-import {
-  RequestBuilderPlaceholder,
-  ResponseDetailPlaceholder,
-} from '@/screens/placeholders';
+import { RequestBuilderScreen } from '@/screens/request/RequestBuilderScreen';
+import { ResponseDetailPlaceholder } from '@/screens/placeholders';
 
 const Stack = createNativeStackNavigator<RequestStackParamList>();
 
@@ -24,8 +21,8 @@ export const RequestStack: React.FC = () => {
     <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
       <Stack.Screen
         name="RequestBuilder"
-        component={RequestBuilderPlaceholder}
-        options={{ headerShown: false }}  // header managed by RequestBuilderScreen itself
+        component={RequestBuilderScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ResponseDetail"
