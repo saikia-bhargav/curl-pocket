@@ -1,7 +1,5 @@
 // EnvironmentPickerSheet — reimplemented with RN Modal + Animated.
-// @gorhom/bottom-sheet v4 is incompatible with react-native-reanimated v4
-// (useWorkletCallback was removed). This implementation has identical UX
-// without any third-party sheet library.
+// @gorhom/bottom-sheet is incompatible with react-native-reanimated v4.
 
 import React, {
   forwardRef,
@@ -30,7 +28,8 @@ import {
   useEnvironmentsStore,
   selectActiveEnvironment,
 } from '@/store/environmentsSlice';
-import type { Environment } from '@/store/environmentsSlice';
+import type { Environment } from '@/types/environment';
+import { useAppNavigation } from '@/navigation';
 
 // Public handle exposed via ref
 export interface EnvironmentPickerSheetHandle {
@@ -45,65 +44,68 @@ export const EnvironmentPickerSheet = forwardRef<
   EnvironmentPickerSheetHandle,
   object
 >((_props, ref) => {
-  const insets = useSafeAreaInsets();
+  const insets       = useSafeAreaInsets();
+  const navigation   = useAppNavigation();
   const environments = useEnvironmentsStore(s => s.environments);
-  const activeEnv = useEnvironmentsStore(selectActiveEnvironment);
-  const setActive = useEnvironmentsStore(s => s.setActive);
+  const activeEnv    = useEnvironmentsStore(selectActiveEnvironment);
+  const setActive    = useEnvironmentsStore(s => s.setActive);
 
   const [visible, setVisible] = useState(false);
-  const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const slideAnim    = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   const open = useCallback(() => {
     setVisible(true);
     Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: ANIM_DURATION,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropAnim, {
-        toValue: 1,
-        duration: ANIM_DURATION,
-        useNativeDriver: true,
-      }),
+      Animated.timing(slideAnim, { toValue: 0, duration: ANIM_DURATION, useNativeDriver: true }),
+      Animated.timing(backdropAnim, { toValue: 1, duration: ANIM_DURATION, useNativeDriver: true }),
     ]).start();
   }, [slideAnim, backdropAnim]);
 
   const close = useCallback(() => {
     Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: SHEET_HEIGHT,
-        duration: ANIM_DURATION,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropAnim, {
-        toValue: 0,
-        duration: ANIM_DURATION,
-        useNativeDriver: true,
-      }),
+      Animated.timing(slideAnim, { toValue: SHEET_HEIGHT, duration: ANIM_DURATION, useNativeDriver: true }),
+      Animated.timing(backdropAnim, { toValue: 0, duration: ANIM_DURATION, useNativeDriver: true }),
     ]).start(() => setVisible(false));
   }, [slideAnim, backdropAnim]);
 
-  // Expose open/close/expand to parent via ref
   useImperativeHandle(ref, () => ({ expand: open, close }), [open, close]);
 
   const handleSelect = useCallback(
-    (id: string) => {
-      setActive(id);
-      close();
-    },
+    (id: string) => { setActive(id); close(); },
     [setActive, close],
   );
 
-  const handleNone = useCallback(() => {
-    setActive(null);
+  const handleNone = useCallback(
+    () => { setActive(null); close(); },
+    [setActive, close],
+  );
+
+  const handleManage = useCallback(() => {
     close();
-  }, [setActive, close]);
+    // Short delay so sheet animates away before navigating
+    setTimeout(() => {
+      navigation.navigate('EnvironmentsTab', { screen: 'Environments' });
+    }, 300);
+  }, [close, navigation]);
+
+  const handleEditEnv = useCallback(
+    (envId: string) => {
+      close();
+      setTimeout(() => {
+        navigation.navigate('EnvironmentsTab', {
+          screen: 'EnvironmentEdit',
+          params: { environmentId: envId },
+        });
+      }, 300);
+    },
+    [close, navigation],
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: Environment }) => {
-      const isActive = item.id === activeEnv?.id;
+      const isActive   = item.id === activeEnv?.id;
+      const varCount   = item.variables.filter(v => v.enabled).length;
       return (
         <TouchableOpacity
           onPress={() => handleSelect(item.id)}
@@ -115,13 +117,14 @@ export const EnvironmentPickerSheet = forwardRef<
           <View style={styles.envInfo}>
             <Text style={styles.envName}>{item.name}</Text>
             <Text style={styles.envMeta}>
-              {item.variableCount} variable{item.variableCount !== 1 ? 's' : ''}
+              {varCount} variable{varCount !== 1 ? 's' : ''}
             </Text>
           </View>
           {isActive && (
             <Icon name="check" size={18} color={Colors.accent.primary} />
           )}
           <TouchableOpacity
+            onPress={() => handleEditEnv(item.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel={`Edit ${item.name}`}
             style={styles.editBtn}>
@@ -130,7 +133,7 @@ export const EnvironmentPickerSheet = forwardRef<
         </TouchableOpacity>
       );
     },
-    [activeEnv, handleSelect],
+    [activeEnv, handleSelect, handleEditEnv],
   );
 
   return (
@@ -140,12 +143,11 @@ export const EnvironmentPickerSheet = forwardRef<
       statusBarTranslucent
       animationType="none"
       onRequestClose={close}>
-      {/* Backdrop */}
+
       <TouchableWithoutFeedback onPress={close} accessible={false}>
         <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]} />
       </TouchableWithoutFeedback>
 
-      {/* Sheet */}
       <Animated.View
         style={[
           styles.sheet,
@@ -172,7 +174,6 @@ export const EnvironmentPickerSheet = forwardRef<
 
         <Divider />
 
-        {/* Environment list */}
         <FlatList
           data={environments}
           keyExtractor={item => item.id}
@@ -183,16 +184,11 @@ export const EnvironmentPickerSheet = forwardRef<
 
         <Divider />
 
-        {/* No environment */}
-        <TouchableOpacity
-          onPress={handleNone}
-          activeOpacity={0.7}
-          style={styles.envRow}>
+        {/* No environment option */}
+        <TouchableOpacity onPress={handleNone} activeOpacity={0.7} style={styles.envRow}>
           <View style={[styles.envDot, { backgroundColor: Colors.text.muted }]} />
           <View style={styles.envInfo}>
-            <Text style={[styles.envName, { color: Colors.text.muted }]}>
-              No environment
-            </Text>
+            <Text style={[styles.envName, { color: Colors.text.muted }]}>No environment</Text>
           </View>
           {activeEnv === null && (
             <Icon name="check" size={18} color={Colors.accent.primary} />
@@ -201,12 +197,10 @@ export const EnvironmentPickerSheet = forwardRef<
 
         <Divider />
 
-        {/* New environment CTA */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={styles.newEnvBtn}>
-          <Icon name="plus" size={18} color={Colors.accent.primary} />
-          <Text style={styles.newEnvLabel}>New environment</Text>
+        {/* Manage environments */}
+        <TouchableOpacity onPress={handleManage} activeOpacity={0.7} style={styles.manageBtn}>
+          <Icon name="cog-outline" size={18} color={Colors.accent.primary} />
+          <Text style={styles.manageBtnLabel}>Manage environments</Text>
         </TouchableOpacity>
       </Animated.View>
     </Modal>
@@ -229,9 +223,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     minHeight: SHEET_HEIGHT,
-    // Android elevation for shadow
     elevation: 24,
-    // iOS shadow
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -241,16 +233,8 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  handleContainer: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.border.default,
-  },
+  handleContainer: { alignItems: 'center', paddingVertical: Spacing.sm },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.border.default },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -258,9 +242,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
   },
-  sheetTitle: {
-    ...Typography.heading,
-  },
+  sheetTitle: { ...Typography.heading },
   envRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -269,26 +251,12 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     minHeight: 52,
   },
-  envDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    flexShrink: 0,
-  },
-  envInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  envName: {
-    ...Typography.bodyMd,
-  },
-  envMeta: {
-    ...Typography.caption,
-  },
-  editBtn: {
-    padding: Spacing.xs,
-  },
-  newEnvBtn: {
+  envDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+  envInfo: { flex: 1, gap: 2 },
+  envName: { ...Typography.bodyMd },
+  envMeta: { ...Typography.caption },
+  editBtn: { padding: Spacing.xs },
+  manageBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
@@ -296,8 +264,5 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     minHeight: 52,
   },
-  newEnvLabel: {
-    ...Typography.bodyMd,
-    color: Colors.accent.primary,
-  },
+  manageBtnLabel: { ...Typography.bodyMd, color: Colors.accent.primary },
 });

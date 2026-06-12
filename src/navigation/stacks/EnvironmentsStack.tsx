@@ -2,10 +2,8 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Colors } from '@/theme';
 import type { EnvironmentsStackParamList } from '@/navigation/types';
-import {
-  EnvironmentsPlaceholder,
-  EnvironmentEditPlaceholder,
-} from '@/screens/placeholders';
+import { EnvironmentsScreen } from '@/screens/environments/EnvironmentsScreen';
+import { EnvironmentEditScreen } from '@/screens/environments/EnvironmentEditScreen';
 
 const Stack = createNativeStackNavigator<EnvironmentsStackParamList>();
 
@@ -22,13 +20,13 @@ export const EnvironmentsStack: React.FC = () => {
     <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
       <Stack.Screen
         name="Environments"
-        component={EnvironmentsPlaceholder}
-        options={{ title: 'Environments' }}
+        component={EnvironmentsScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="EnvironmentEdit"
-        component={EnvironmentEditPlaceholder}
-        options={{ title: 'Edit environment' }}
+        component={EnvironmentEditScreen}
+        options={{ title: 'Edit Environment' }}
       />
     </Stack.Navigator>
   );

@@ -3,10 +3,16 @@ import type { AxiosResponse, AxiosRequestConfig } from 'axios';
 import { REQUEST_TIMEOUT_MS, MAX_RESPONSE_BODY_SIZE } from '@/constants';
 import { getStatusText } from '@/types/request';
 import { useHistoryStore } from '@/store/historySlice';
+import { useEnvironmentsStore, selectActiveVariables } from '@/store/environmentsSlice';
+import { interpolateRequest } from '@/services/interpolate';
 import type { ApiRequest, ApiResponse } from '@/types/request';
 
-export async function sendRequest(request: ApiRequest): Promise<ApiResponse> {
+export async function sendRequest(rawRequest: ApiRequest): Promise<ApiResponse> {
   const startTime = Date.now();
+
+  // ── Variable interpolation ──────────────────────────────────────────────────
+  const activeVars = selectActiveVariables(useEnvironmentsStore.getState());
+  const { request } = interpolateRequest(rawRequest, activeVars);
 
   // ── Query params ────────────────────────────────────────────
   const params: Record<string, string> = {};
