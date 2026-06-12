@@ -26,7 +26,9 @@ import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import { Colors, Typography, Spacing, Radius } from '@/theme';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { Divider } from '@/components/atoms/Divider';
-import type { ApiResponse } from '@/types/request';
+import { ExportSheet } from '@/components/request/ExportSheet';
+import type { ExportSheetHandle } from '@/components/request/ExportSheet';
+import type { ApiResponse, ApiRequest } from '@/types/request';
 
 const SCREEN_H = Dimensions.get('window').height;
 const HALF_H  = SCREEN_H * 0.55;
@@ -47,6 +49,7 @@ const CODE_THEME = {
 interface Props {
   visible: boolean;
   response: ApiResponse;
+  request: ApiRequest;
   onClose: () => void;
   onRetry: () => void;
 }
@@ -65,6 +68,7 @@ function formatMs(ms: number): string {
 export const ResponseSheet: React.FC<Props> = ({
   visible,
   response,
+  request,
   onClose,
   onRetry,
 }) => {
@@ -75,6 +79,8 @@ export const ResponseSheet: React.FC<Props> = ({
   const heightAnim = useRef(new Animated.Value(HALF_H)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(HALF_H)).current;
+  
+  const exportSheetRef = useRef<ExportSheetHandle>(null);
 
   // Animate in when visible becomes true
   useEffect(() => {
@@ -281,10 +287,12 @@ export const ResponseSheet: React.FC<Props> = ({
         <View style={styles.toolbar}>
           <ToolbarBtn icon="content-copy"    label="Copy"   onPress={handleCopy} />
           <ToolbarBtn icon="share-variant"   label="Share"  onPress={handleShare} />
-          <ToolbarBtn icon="content-save"    label="Save"   onPress={handleSave} />
+          <ToolbarBtn icon="code-braces"     label="Export" onPress={() => exportSheetRef.current?.expand()} />
           <ToolbarBtn icon="refresh"         label="Retry"  onPress={onRetry} accent />
         </View>
       </Animated.View>
+
+      <ExportSheet ref={exportSheetRef} request={request} />
     </Modal>
   );
 };

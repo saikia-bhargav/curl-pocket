@@ -66,8 +66,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     gap: Spacing.xs,
-    maxWidth: 140,
-    marginRight: Spacing.sm,
+    maxWidth: 110,
+    // marginRight: Spacing.sm,
   },
   dot: {
     width: 7,

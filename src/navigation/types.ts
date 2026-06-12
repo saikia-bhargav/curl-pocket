@@ -6,6 +6,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
 
+export type RootStackParamList = {
+  Main: NavigatorScreenParams<RootTabParamList>;
+};
+
 // ── Root tab param list ────────────────────────────────────────
 export type RootTabParamList = {
   RequestTab:      NavigatorScreenParams<RequestStackParamList>;

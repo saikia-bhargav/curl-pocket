@@ -2,6 +2,8 @@ import React, {
   useCallback,
   useMemo,
   useState,
+  useRef,
+  useEffect,
 } from 'react';
 import {
   View,
@@ -10,7 +12,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  TouchableOpacity,
+  DeviceEventEmitter,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography } from '@/theme';
 import { RequestTabsBar } from '@/components/navigation/RequestTabsBar';
@@ -23,6 +28,12 @@ import { AuthPanel } from '@/components/request/panels/AuthPanel';
 import { PreReqPanel } from '@/components/request/panels/PreReqPanel';
 import { TestsPanel } from '@/components/request/panels/TestsPanel';
 import { ResponseSheet } from '@/components/request/ResponseSheet';
+import { ExportSheet } from '@/components/request/ExportSheet';
+import { RequestActionsSheet } from '@/components/request/RequestActionsSheet';
+import { CurlImportSheet } from '@/components/request/CurlImportSheet';
+import type { ExportSheetHandle } from '@/components/request/ExportSheet';
+import type { RequestActionsSheetHandle } from '@/components/request/RequestActionsSheet';
+import type { CurlImportSheetHandle } from '@/components/request/CurlImportSheet';
 import {
   useTabsStore,
   selectActiveTab,
@@ -30,7 +41,7 @@ import {
 } from '@/store/tabsSlice';
 import { sendRequest } from '@/services/httpService';
 import { generateId } from '@/utils';
-import type { HttpMethod, KeyValuePair, RequestBody, RequestAuth } from '@/types/request';
+import type { HttpMethod, KeyValuePair, RequestBody, RequestAuth, ApiRequest } from '@/types/request';
 import type { ApiResponse } from '@/types/request';
 import type { PanelTab } from '@/components/request/PanelTabBar';
 
@@ -65,6 +76,24 @@ export const RequestBuilderScreen: React.FC = () => {
   const [loading, setLoading]         = useState(false);
   const [response, setResponse]       = useState<ApiResponse | null>(null);
   const [responseVisible, setResponseVisible] = useState(false);
+
+  // ── Sheet Refs ────────────────────────────────────────────────
+  const exportSheetRef = useRef<ExportSheetHandle>(null);
+  const actionsSheetRef = useRef<RequestActionsSheetHandle>(null);
+  const importSheetRef = useRef<CurlImportSheetHandle>(null);
+
+  // ── Event Listener for cURL Import ────────────────────────────
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('IMPORT_CURL', (req: Partial<ApiRequest>) => {
+      if (req.method) setMethod(req.method);
+      if (req.url) setUrl(req.url);
+      if (req.params) setParams(req.params);
+      if (req.headers) setHeaders(req.headers);
+      if (req.body) setRequestBody(req.body);
+      if (req.auth) setAuth(req.auth);
+    });
+    return () => sub.remove();
+  }, []);
 
   // ── Method change ─────────────────────────────────────────────
   const handleMethodChange = useCallback(
@@ -166,7 +195,16 @@ export const RequestBuilderScreen: React.FC = () => {
       {/* ── App header ─────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Curl Pocket</Text>
-        <EnvironmentBadge />
+        <View style={styles.headerRight}>
+          <EnvironmentBadge />
+          <TouchableOpacity
+            onPress={() => actionsSheetRef.current?.expand()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="More actions"
+            style={styles.moreBtn}>
+            <Icon name="dots-vertical" size={24} color={Colors.text.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Browser-style request tabs ─────────────────────────── */}
@@ -265,24 +303,53 @@ export const RequestBuilderScreen: React.FC = () => {
         </View>
       )}
 
-      {/* ── Response sheet (appears on send) ───────────────────── */}
+      {/* ── Sheets ─────────────────────────────────────────────── */}
       {response !== null && (
         <ResponseSheet
           visible={responseVisible}
           response={response}
+          request={{
+            id: activeTabId ?? generateId(),
+            method,
+            url,
+            params,
+            headers,
+            body: requestBody,
+            auth,
+            testScript,
+          }}
           onClose={() => setResponseVisible(false)}
           onRetry={handleRetry}
         />
       )}
+
+      <RequestActionsSheet
+        ref={actionsSheetRef}
+        onImport={() => importSheetRef.current?.expand()}
+        onExport={() => exportSheetRef.current?.expand()}
+      />
+
+      <ExportSheet
+        ref={exportSheetRef}
+        request={{
+          id: activeTabId ?? generateId(),
+          method,
+          url,
+          params,
+          headers,
+          body: requestBody,
+          auth,
+          testScript,
+        }}
+      />
+
+      <CurlImportSheet ref={importSheetRef} />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.background.primary,
-  },
+  root: { flex: 1, backgroundColor: Colors.background.primary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -293,10 +360,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border.subtle,
   },
-  headerTitle: {
-    ...Typography.heading,
+  headerTitle: { ...Typography.heading },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
-  panelContainer: {
-    flex: 1,
+  moreBtn: {
+    padding: Spacing.xs,
   },
+  panelContainer: { flex: 1, backgroundColor: Colors.background.primary },
 });

@@ -5,7 +5,7 @@ import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { RootTabs } from '@/navigation';
+import { RootNavigator } from '@/navigation/RootNavigator';
 import { Colors } from '@/theme';
 
 // React Navigation theme — maps to our dark color tokens
@@ -37,7 +37,7 @@ const App: React.FC = () => {
           translucent={false}
         />
         <NavigationContainer theme={NAV_THEME}>
-          <RootTabs />
+          <RootNavigator />
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>
