@@ -2,10 +2,8 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Colors } from '@/theme';
 import type { HistoryStackParamList } from '@/navigation/types';
-import {
-  HistoryPlaceholder,
-  HistoryDetailPlaceholder,
-} from '@/screens/placeholders';
+import { HistoryScreen } from '@/screens/history/HistoryScreen';
+import { HistoryDetailScreen } from '@/screens/history/HistoryDetailScreen';
 
 const Stack = createNativeStackNavigator<HistoryStackParamList>();
 
@@ -22,13 +20,13 @@ export const HistoryStack: React.FC = () => {
     <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
       <Stack.Screen
         name="History"
-        component={HistoryPlaceholder}
-        options={{ title: 'History' }}
+        component={HistoryScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="HistoryDetail"
-        component={HistoryDetailPlaceholder}
-        options={{ title: 'Request detail' }}
+        component={HistoryDetailScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

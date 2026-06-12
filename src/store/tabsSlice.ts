@@ -21,6 +21,7 @@ interface TabsState {
 
 interface TabsActions {
   newTab: () => void;
+  addTabWithData: (data: Partial<Omit<RequestTab, 'id'>>) => void;
   closeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   updateTab: (id: string, partial: Partial<Omit<RequestTab, 'id'>>) => void;
@@ -51,6 +52,14 @@ export const useTabsStore = create<TabsState & TabsActions>()(
       };
       set(state => {
         state.tabs.push(tab);
+        state.activeTabId = id;
+      });
+    },
+
+    addTabWithData: (data) => {
+      const id = generateId();
+      set(state => {
+        state.tabs.push({ ...DEFAULT_TAB, ...data, id });
         state.activeTabId = id;
       });
     },

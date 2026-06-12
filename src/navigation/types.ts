@@ -64,6 +64,11 @@ export type CollectionDetailScreenProps = CompositeScreenProps<
   BottomTabScreenProps<RootTabParamList>
 >;
 
+export type CollectionRequestScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<CollectionsStackParamList, 'CollectionRequest'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
+
 export type HistoryScreenProps = CompositeScreenProps<
   NativeStackScreenProps<HistoryStackParamList, 'History'>,
   BottomTabScreenProps<RootTabParamList>

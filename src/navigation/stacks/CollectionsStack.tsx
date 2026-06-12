@@ -2,11 +2,10 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Colors } from '@/theme';
 import type { CollectionsStackParamList } from '@/navigation/types';
-import {
-  CollectionsPlaceholder,
-  CollectionDetailPlaceholder,
-  CollectionRequestPlaceholder,
-} from '@/screens/placeholders';
+
+import { CollectionsScreen } from '@/screens/collections/CollectionsScreen';
+import { CollectionDetailScreen } from '@/screens/collections/CollectionDetailScreen';
+import { CollectionRequestScreen } from '@/screens/collections/CollectionRequestScreen';
 
 const Stack = createNativeStackNavigator<CollectionsStackParamList>();
 
@@ -23,18 +22,18 @@ export const CollectionsStack: React.FC = () => {
     <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
       <Stack.Screen
         name="Collections"
-        component={CollectionsPlaceholder}
-        options={{ title: 'Collections' }}
+        component={CollectionsScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="CollectionDetail"
-        component={CollectionDetailPlaceholder}
-        options={{ title: 'Collection' }}
+        component={CollectionDetailScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="CollectionRequest"
-        component={CollectionRequestPlaceholder}
-        options={{ title: 'Request' }}
+        component={CollectionRequestScreen}
+        options={{ headerShown: false, presentation: 'modal' }}
       />
     </Stack.Navigator>
   );
